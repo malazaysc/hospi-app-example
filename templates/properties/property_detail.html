@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.name }} - Hospi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+    .back-link {
+        display: inline-block;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+    .gallery {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--pico-border-radius);
+        margin-bottom: 1.5rem;
+    }
+    .gallery img {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        display: block;
+    }
+    .gallery-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.5);
+        color: white;
+        border: none;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        font-size: 1.5rem;
+        z-index: 10;
+    }
+    .gallery-nav.prev { left: 0.5rem; }
+    .gallery-nav.next { right: 0.5rem; }
+    .gallery-counter {
+        position: absolute;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        background: rgba(0,0,0,0.5);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+    }
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+    }
+    .detail-sidebar {
+        position: sticky;
+        top: 1rem;
+    }
+    .price-box {
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+        padding: 1.25rem;
+        text-align: center;
+    }
+    .price-box .price {
+        font-size: 1.75rem;
+        font-weight: bold;
+        color: var(--pico-primary);
+    }
+    .amenity-tag {
+        display: inline-block;
+        background: var(--pico-secondary-background);
+        color: var(--pico-secondary-inverse);
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        margin: 0.15rem;
+    }
+    .booking-table {
+        font-size: 0.85rem;
+    }
+    .detail-map {
+        height: 250px;
+        border-radius: var(--pico-border-radius);
+        margin-top: 1rem;
+    }
+    .status-confirmed { color: green; }
+    .status-pending { color: orange; }
+    .status-cancelled { color: red; }
+
+    @media (max-width: 768px) {
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <a href="{% url 'properties:list' %}" class="back-link">&larr; Back to search</a>
+
+    <!-- Image gallery -->
+    {% with images=property.images.all %}
+    {% if images %}
+    <div class="gallery" x-data="{ current: 0, total: {{ images|length }} }">
+        {% for img in images %}
+        <img src="{{ img.image_url }}"
+             alt="{{ property.name }}"
+             x-show="current === {{ forloop.counter0 }}"
+             x-transition>
+        {% endfor %}
+
+        <template x-if="total > 1">
+            <div>
+                <button class="gallery-nav prev" @click="current = (current - 1 + total) % total">&lsaquo;</button>
+                <button class="gallery-nav next" @click="current = (current + 1) % total">&rsaquo;</button>
+                <span class="gallery-counter" x-text="(current + 1) + ' / ' + total"></span>
+            </div>
+        </template>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="detail-grid">
+        <!-- Main content -->
+        <div>
+            <hgroup>
+                <h2>{{ property.name }}</h2>
+                <p>{{ property.get_property_type_display }} in {{ property.city }}, {{ property.country }}</p>
+            </hgroup>
+
+            <p>
+                <strong>{{ property.bedrooms }}</strong> bedroom{{ property.bedrooms|pluralize }} &middot;
+                <strong>{{ property.bathrooms }}</strong> bath &middot;
+                <strong>{{ property.max_guests }}</strong> guest{{ property.max_guests|pluralize }} max
+            </p>
+
+            <h4>Description</h4>
+            <p>{{ property.description }}</p>
+
+            <h4>Amenities</h4>
+            <div>
+                {% for amenity in property.amenities.all %}
+                <span class="amenity-tag">{{ amenity.name }}</span>
+                {% empty %}
+                <p>No amenities listed.</p>
+                {% endfor %}
+            </div>
+
+            <h4>Upcoming Bookings</h4>
+            {% if bookings %}
+            <div class="overflow-auto">
+                <table class="booking-table">
+                    <thead>
+                        <tr>
+                            <th>Check-in</th>
+                            <th>Check-out</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                        <tr>
+                            <td>{{ booking.check_in }}</td>
+                            <td>{{ booking.check_out }}</td>
+                            <td><span class="status-{{ booking.status }}">{{ booking.get_status_display }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p>No upcoming bookings.</p>
+            {% endif %}
+
+            <!-- Map -->
+            <h4>Location</h4>
+            <p>{{ property.address }}, {{ property.city }}, {{ property.country }}</p>
+            <div id="detail-map" class="detail-map"></div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="detail-sidebar">
+            <div class="price-box">
+                <div class="price">${{ property.base_price_per_night }}</div>
+                <div>per night</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lat = {{ property.latitude }};
+    const lng = {{ property.longitude }};
+    const map = L.map('detail-map').setView([lat, lng], 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 19,
+        subdomains: 'abcd',
+    }).addTo(map);
+    L.marker([lat, lng]).addTo(map)
+        .bindPopup('<strong>{{ property.name|escapejs }}</strong>')
+        .openPopup();
+});
+</script>
+{% endblock %}

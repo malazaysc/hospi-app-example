@@ -1,0 +1,89 @@
+- generic [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Hospi" [ref=e3] [cursor=pointer]:
+      - /url: /
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: Search location
+        - textbox "Search address..." [ref=e8]
+      - generic [ref=e9]:
+        - generic [ref=e10]: Type
+        - combobox [ref=e11]:
+          - option "All types"
+          - option "Apartment"
+          - option "House"
+          - option "Condo"
+          - option "Villa" [selected]
+          - option "Studio"
+          - option "Townhouse"
+          - option "Cottage"
+          - option "Loft"
+          - option "Penthouse"
+          - option "Bungalow"
+      - generic [ref=e12]:
+        - generic [ref=e13]: Bedrooms
+        - combobox [ref=e14]:
+          - option "Any"
+          - option "1+"
+          - option "2+"
+          - option "3+"
+          - option "4+" [selected]
+      - generic [ref=e15]:
+        - generic [ref=e16]: Guests
+        - combobox [ref=e17]:
+          - option "Any" [selected]
+          - option "2+"
+          - option "4+"
+          - option "6+"
+          - option "8+"
+      - generic [ref=e18]:
+        - generic [ref=e19]: Min price
+        - spinbutton [ref=e20]
+      - generic [ref=e21]:
+        - generic [ref=e22]: Max price
+        - spinbutton [ref=e23]: "500"
+      - generic [ref=e24]:
+        - generic [ref=e25]: Amenities
+        - button "Select..." [active] [ref=e26] [cursor=pointer]
+    - generic [ref=e27]:
+      - generic:
+        - generic:
+          - button "Marker" [ref=e711] [cursor=pointer]
+          - button "Marker" [ref=e712] [cursor=pointer]
+      - generic:
+        - generic [ref=e28]:
+          - button "Zoom in" [ref=e29] [cursor=pointer]: +
+          - button "Zoom out" [ref=e30] [cursor=pointer]: −
+        - generic [ref=e31]:
+          - link "Leaflet" [ref=e32] [cursor=pointer]:
+            - /url: https://leafletjs.com
+            - img [ref=e33]
+            - text: Leaflet
+          - text: "| ©"
+          - link "OpenStreetMap" [ref=e37] [cursor=pointer]:
+            - /url: https://www.openstreetmap.org/copyright
+          - text: contributors ©
+          - link "CARTO" [ref=e38] [cursor=pointer]:
+            - /url: https://carto.com/
+    - generic [ref=e39]:
+      - generic [ref=e40]: 2 properties found
+      - generic [ref=e41]:
+        - article [ref=e713]:
+          - link "Villa in Rome Villa in Rome Villa · 5 beds · 2.2 bath · 10 guests Rome, Italy $447.67/night" [ref=e714] [cursor=pointer]:
+            - /url: /property/74/
+            - img "Villa in Rome" [ref=e715]
+            - generic [ref=e716]:
+              - heading "Villa in Rome" [level=4] [ref=e717]
+              - generic [ref=e718]: Villa · 5 beds · 2.2 bath · 10 guests
+              - generic [ref=e719]: Rome, Italy
+              - generic [ref=e720]: $447.67/night
+        - article [ref=e721]:
+          - link "Villa in Barcelona Villa in Barcelona Villa · 4 beds · 2.6 bath · 10 guests Barcelona, Spain $378.86/night" [ref=e722] [cursor=pointer]:
+            - /url: /property/15/
+            - img "Villa in Barcelona" [ref=e723]
+            - generic [ref=e724]:
+              - heading "Villa in Barcelona" [level=4] [ref=e725]
+              - generic [ref=e726]: Villa · 4 beds · 2.6 bath · 10 guests
+              - generic [ref=e727]: Barcelona, Spain
+              - generic [ref=e728]: $378.86/night

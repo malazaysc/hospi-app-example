@@ -1,0 +1,26 @@
+{% for property in properties %}
+<article class="property-card">
+    <a href="{% url 'properties:detail' pk=property.pk %}">
+        {% if property.primary_image %}
+        <img src="{{ property.primary_image.image_url }}" alt="{{ property.name }}" loading="lazy">
+        {% else %}
+        <div style="height:160px;background:var(--pico-muted-border-color);display:flex;align-items:center;justify-content:center;">No image</div>
+        {% endif %}
+        <div class="card-body">
+            <h4>{{ property.name }}</h4>
+            <div class="meta">
+                {{ property.get_property_type_display }} &middot;
+                {{ property.bedrooms }} bed{{ property.bedrooms|pluralize }} &middot;
+                {{ property.bathrooms }} bath &middot;
+                {{ property.max_guests }} guest{{ property.max_guests|pluralize }}
+            </div>
+            <div class="meta">{{ property.city }}, {{ property.country }}</div>
+            <div class="price">${{ property.base_price_per_night }}/night</div>
+        </div>
+    </a>
+</article>
+{% empty %}
+<div style="padding:2rem;text-align:center;color:var(--pico-muted-color);">
+    No properties found in this area. Try zooming out or adjusting your filters.
+</div>
+{% endfor %}

@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Hospi - Find Your Stay{% endblock %}
+
+{% block extra_css %}
+<style>
+    .app-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto 1fr;
+        height: calc(100vh - 52px);
+        overflow: hidden;
+    }
+    .filters-bar {
+        grid-column: 1 / -1;
+        padding: 0.75rem 1rem;
+        background: var(--pico-card-background-color);
+        border-bottom: 1px solid var(--pico-muted-border-color);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: end;
+    }
+    .filters-bar label {
+        margin-bottom: 0;
+        font-size: 0.8rem;
+    }
+    .filters-bar select,
+    .filters-bar input {
+        margin-bottom: 0;
+        padding: 0.35rem 0.5rem;
+        font-size: 0.85rem;
+        height: auto;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+    .filter-group.amenities-group {
+        position: relative;
+    }
+    .amenities-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 1000;
+        background: var(--pico-card-background-color);
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+        padding: 0.5rem;
+        max-height: 200px;
+        overflow-y: auto;
+        min-width: 200px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .amenities-dropdown label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+    .amenities-dropdown input[type="checkbox"] {
+        margin: 0;
+    }
+    #map {
+        height: 100%;
+        width: 100%;
+    }
+    .results-panel {
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    .property-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .property-card {
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+        overflow: hidden;
+        transition: box-shadow 0.2s;
+    }
+    .property-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .property-card a {
+        text-decoration: none;
+        color: inherit;
+    }
+    .property-card img {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+    }
+    .property-card .card-body {
+        padding: 0.75rem;
+    }
+    .property-card h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1rem;
+    }
+    .property-card .meta {
+        font-size: 0.8rem;
+        color: var(--pico-muted-color);
+        margin-bottom: 0.25rem;
+    }
+    .property-card .price {
+        font-weight: bold;
+        color: var(--pico-primary);
+    }
+    .search-bar {
+        position: relative;
+        flex-grow: 1;
+        max-width: 300px;
+    }
+    .search-bar input {
+        width: 100%;
+    }
+    .search-results-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: var(--pico-card-background-color);
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .search-results-dropdown div {
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+    .search-results-dropdown div:hover {
+        background: var(--pico-primary-focus);
+    }
+    .result-count {
+        padding: 0.5rem 0;
+        font-size: 0.85rem;
+        color: var(--pico-muted-color);
+    }
+    .loading-spinner {
+        text-align: center;
+        padding: 2rem;
+        color: var(--pico-muted-color);
+    }
+
+    @media (max-width: 768px) {
+        .app-layout {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 40vh 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-layout" x-data="hospiApp()">
+    <!-- Filters bar -->
+    <div class="filters-bar">
+        <!-- Address search -->
+        <div class="filter-group search-bar" @click.outside="searchResults = []">
+            <label>Search location</label>
+            <input type="text"
+                   placeholder="Search address..."
+                   x-model="searchQuery"
+                   @input.debounce.400ms="geocode()"
+                   @keydown.escape="searchResults = []">
+            <div class="search-results-dropdown" x-show="searchResults.length > 0" x-cloak>
+                <template x-for="result in searchResults" :key="result.place_id">
+                    <div @click="flyTo(result)" x-text="result.display_name"></div>
+                </template>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label>Type</label>
+            <select x-model="filters.property_type" @change="applyFilters()">
+                <option value="">All types</option>
+                {% for value, label in property_types %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Bedrooms</label>
+            <select x-model="filters.min_bedrooms" @change="applyFilters()">
+                <option value="">Any</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Guests</label>
+            <select x-model="filters.min_guests" @change="applyFilters()">
+                <option value="">Any</option>
+                <option value="2">2+</option>
+                <option value="4">4+</option>
+                <option value="6">6+</option>
+                <option value="8">8+</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Min price</label>
+            <input type="number" placeholder="$0" x-model="filters.min_price" @change="applyFilters()" style="width:80px">
+        </div>
+
+        <div class="filter-group">
+            <label>Max price</label>
+            <input type="number" placeholder="$999" x-model="filters.max_price" @change="applyFilters()" style="width:80px">
+        </div>
+
+        <div class="filter-group amenities-group">
+            <label>Amenities</label>
+            <button class="outline" style="padding:0.35rem 0.5rem;font-size:0.85rem;margin:0"
+                    @click="showAmenities = !showAmenities"
+                    x-text="selectedAmenitiesCount > 0 ? selectedAmenitiesCount + ' selected' : 'Select...'">
+            </button>
+            <div class="amenities-dropdown" x-show="showAmenities" x-cloak @click.outside="showAmenities = false">
+                {% for amenity in amenities %}
+                <label>
+                    <input type="checkbox" value="{{ amenity.id }}" x-model="filters.amenities" @change="applyFilters()">
+                    {{ amenity.name }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="filter-group" style="margin-left: auto;">
+            <span aria-busy="true" class="htmx-indicator" id="search-indicator" style="font-size:0.8rem"></span>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Results panel -->
+    <div class="results-panel">
+        <div class="result-count" x-text="resultCount + ' properties found'"></div>
+        <div id="property-results" class="property-grid">
+            <div class="loading-spinner">Move the map to search for properties...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function hospiApp() {
+    return {
+        map: null,
+        markers: null,
+        searchQuery: '',
+        searchResults: [],
+        showAmenities: false,
+        resultCount: 0,
+        filters: {
+            property_type: '',
+            min_bedrooms: '',
+            min_guests: '',
+            min_price: '',
+            max_price: '',
+            amenities: [],
+        },
+
+        get selectedAmenitiesCount() {
+            return this.filters.amenities.length;
+        },
+
+        init() {
+            this.map = L.map('map').setView([40.0, 0.0], 3);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+                maxZoom: 19,
+                subdomains: 'abcd',
+            }).addTo(this.map);
+
+            this.markers = L.layerGroup().addTo(this.map);
+
+            this.map.on('moveend', () => this.applyFilters());
+
+            // Initial load after a short delay for the map to settle
+            setTimeout(() => this.applyFilters(), 300);
+        },
+
+        buildQueryString() {
+            const bounds = this.map.getBounds();
+            const params = new URLSearchParams();
+            params.set('south', bounds.getSouth());
+            params.set('west', bounds.getWest());
+            params.set('north', bounds.getNorth());
+            params.set('east', bounds.getEast());
+
+            if (this.filters.property_type) params.set('property_type', this.filters.property_type);
+            if (this.filters.min_bedrooms) params.set('min_bedrooms', this.filters.min_bedrooms);
+            if (this.filters.min_guests) params.set('min_guests', this.filters.min_guests);
+            if (this.filters.min_price) params.set('min_price', this.filters.min_price);
+            if (this.filters.max_price) params.set('max_price', this.filters.max_price);
+            this.filters.amenities.forEach(id => params.append('amenities', id));
+
+            return params.toString();
+        },
+
+        applyFilters() {
+            if (!this.map) return;
+
+            const qs = this.buildQueryString();
+
+            // Update property cards via HTMX
+            htmx.ajax('GET', '/search/?' + qs, {
+                target: '#property-results',
+                indicator: '#search-indicator',
+            });
+
+            // Update markers
+            this.updateMarkers(qs);
+        },
+
+        async updateMarkers(qs) {
+            try {
+                const response = await fetch('/markers/?' + qs);
+                const data = await response.json();
+                this.markers.clearLayers();
+                this.resultCount = data.length;
+
+                data.forEach(p => {
+                    const marker = L.marker([p.lat, p.lng])
+                        .bindPopup(
+                            `<strong>${p.name}</strong><br>` +
+                            `${p.type}<br>` +
+                            `<strong>$${p.price}/night</strong><br>` +
+                            `<a href="/property/${p.id}/">View details</a>`
+                        );
+                    this.markers.addLayer(marker);
+                });
+            } catch (err) {
+                console.error('Failed to load markers:', err);
+            }
+        },
+
+        async geocode() {
+            if (this.searchQuery.length < 3) {
+                this.searchResults = [];
+                return;
+            }
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.searchQuery)}&limit=5`;
+                const response = await fetch(url, {
+                    headers: { 'Accept-Language': 'en' }
+                });
+                this.searchResults = await response.json();
+            } catch (err) {
+                console.error('Geocoding error:', err);
+                this.searchResults = [];
+            }
+        },
+
+        flyTo(result) {
+            const lat = parseFloat(result.lat);
+            const lon = parseFloat(result.lon);
+            this.map.flyTo([lat, lon], 13);
+            this.searchQuery = result.display_name;
+            this.searchResults = [];
+        },
+    };
+}
+</script>
+{% endblock %}
