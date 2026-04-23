@@ -1,9 +1,21 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Hospi{% endblock %}</title>
+    <title>{% block title %}Hospi App{% endblock %}</title>
+
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
 
     <!-- PicoCSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
@@ -39,6 +51,28 @@
             font-weight: bold;
             font-size: 1.25rem;
         }
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--pico-primary-inverse);
+            color: var(--pico-primary-inverse);
+            width: 2.25rem;
+            height: 2.25rem;
+            padding: 0;
+            margin: 0;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .theme-toggle .icon-dark { display: none; }
+        [data-theme="dark"] .theme-toggle .icon-light { display: none; }
+        [data-theme="dark"] .theme-toggle .icon-dark { display: inline; }
         .htmx-indicator {
             display: none;
         }
@@ -46,13 +80,62 @@
         .htmx-request.htmx-indicator {
             display: inline-block;
         }
+
+        /* Leaflet dark-mode legibility: controls, attribution, popups */
+        [data-theme="dark"] .leaflet-control-zoom a,
+        [data-theme="dark"] .leaflet-bar a {
+            background-color: #2b2b2b;
+            color: #eaeaea;
+            border-bottom-color: #444;
+        }
+        [data-theme="dark"] .leaflet-control-zoom a:hover,
+        [data-theme="dark"] .leaflet-bar a:hover {
+            background-color: #3a3a3a;
+        }
+        [data-theme="dark"] .leaflet-control-attribution {
+            background: rgba(20, 20, 20, 0.85);
+            color: #ccc;
+        }
+        [data-theme="dark"] .leaflet-control-attribution a {
+            color: #8ab4f8;
+        }
+        [data-theme="dark"] .leaflet-popup-content-wrapper,
+        [data-theme="dark"] .leaflet-popup-tip {
+            background: #222;
+            color: #eaeaea;
+        }
+        [data-theme="dark"] .leaflet-popup-content a {
+            color: #8ab4f8;
+        }
+        [data-theme="dark"] .leaflet-container a.leaflet-popup-close-button {
+            color: #ccc;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="top-nav">
         <a href="{% url 'properties:list' %}">Hospi</a>
+        <button id="theme-toggle"
+                type="button"
+                class="theme-toggle"
+                aria-label="Toggle color theme"
+                title="Toggle color theme"
+                onclick="window.__hospiToggleTheme()">
+            <span class="icon-light" aria-hidden="true">☾</span>
+            <span class="icon-dark" aria-hidden="true">☀</span>
+        </button>
     </nav>
+
+    <script>
+        window.__hospiToggleTheme = function () {
+            var root = document.documentElement;
+            var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            root.setAttribute('data-theme', next);
+            try { localStorage.setItem('theme', next); } catch (e) {}
+            document.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: next } }));
+        };
+    </script>
 
     {% block content %}{% endblock %}
 
