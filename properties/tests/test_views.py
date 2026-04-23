@@ -14,6 +14,22 @@ class PropertyListViewTest(TestCase):
         self.assertContains(response, "Hospi")
 
 
+class ThemeToggleTemplateTest(TestCase):
+    def test_list_renders_theme_toggle(self):
+        response = self.client.get(reverse("properties:list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="theme-toggle"')
+        self.assertContains(response, "__hospiToggleTheme")
+
+    def test_list_has_prepaint_theme_bootstrap(self):
+        response = self.client.get(reverse("properties:list"))
+        self.assertContains(response, "localStorage.getItem('theme')")
+        self.assertContains(response, "prefers-color-scheme: dark")
+        # The <html> element should not hard-code data-theme; the pre-paint
+        # script sets it before first paint based on saved/system preference.
+        self.assertNotContains(response, '<html lang="en" data-theme="light">')
+
+
 class PropertySearchViewTest(TestCase):
     def setUp(self):
         self.ny_prop = Property.objects.create(

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ property.name }} - Hospi{% endblock %}
+{% block title %}{{ property.name }} - Hospi App{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -87,9 +87,14 @@
         border-radius: var(--pico-border-radius);
         margin-top: 1rem;
     }
-    .status-confirmed { color: green; }
-    .status-pending { color: orange; }
-    .status-cancelled { color: red; }
+    .status-confirmed { color: var(--status-confirmed, #2e7d32); }
+    .status-pending { color: var(--status-pending, #ed6c02); }
+    .status-cancelled { color: var(--status-cancelled, #c62828); }
+    [data-theme="dark"] {
+        --status-confirmed: #81c784;
+        --status-pending: #ffb74d;
+        --status-cancelled: #ef9a9a;
+    }
 
     @media (max-width: 768px) {
         .detail-grid {
@@ -200,11 +205,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const lat = {{ property.latitude }};
     const lng = {{ property.longitude }};
     const map = L.map('detail-map').setView([lat, lng], 15);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+
+    function tileUrlForTheme(theme) {
+        return theme === 'dark'
+            ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+            : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+    }
+
+    const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const tileLayer = L.tileLayer(tileUrlForTheme(initialTheme), {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
         maxZoom: 19,
         subdomains: 'abcd',
     }).addTo(map);
+
+    document.addEventListener('theme-changed', function (e) {
+        tileLayer.setUrl(tileUrlForTheme(e.detail.theme));
+    });
+
     L.marker([lat, lng]).addTo(map)
         .bindPopup('<strong>{{ property.name|escapejs }}</strong>')
         .openPopup();
