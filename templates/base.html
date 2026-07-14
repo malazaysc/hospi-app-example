@@ -81,7 +81,51 @@
             display: inline-block;
         }
 
-        /* Leaflet dark-mode legibility: controls, attribution, popups */
+        /* Leaflet controls: neutralize PicoCSS link styling on zoom buttons
+           so the +/- glyphs and borders are driven by the theme, not link color.
+           Also restore Leaflet's sizing so PicoCSS's <a> padding/line-height
+           doesn't push the +/- glyphs off-center. */
+        .leaflet-bar a,
+        .leaflet-bar a:hover,
+        .leaflet-bar a:focus,
+        .leaflet-bar a:active,
+        .leaflet-bar a:visited {
+            text-decoration: none;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+        }
+        .leaflet-bar a.leaflet-control-zoom-in,
+        .leaflet-bar a.leaflet-control-zoom-out {
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            display: block;
+            box-sizing: content-box;
+        }
+        .leaflet-bar a:focus-visible {
+            outline: 2px solid var(--pico-primary);
+            outline-offset: -2px;
+        }
+
+        /* Light mode: keep Leaflet defaults but ensure glyph color is readable
+           (PicoCSS colors <a> blue; Leaflet buttons should be neutral). */
+        .leaflet-bar a,
+        .leaflet-bar a:hover {
+            color: #333;
+        }
+        .leaflet-bar a.leaflet-disabled {
+            color: #bbb;
+        }
+
+        /* Dark-mode legibility: controls, attribution, popups */
+        [data-theme="dark"] .leaflet-bar {
+            border-color: #444;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
+        }
         [data-theme="dark"] .leaflet-control-zoom a,
         [data-theme="dark"] .leaflet-bar a {
             background-color: #2b2b2b;
@@ -91,6 +135,16 @@
         [data-theme="dark"] .leaflet-control-zoom a:hover,
         [data-theme="dark"] .leaflet-bar a:hover {
             background-color: #3a3a3a;
+            color: #ffffff;
+        }
+        [data-theme="dark"] .leaflet-control-zoom a:active,
+        [data-theme="dark"] .leaflet-bar a:active {
+            background-color: #1f1f1f;
+        }
+        [data-theme="dark"] .leaflet-bar a.leaflet-disabled {
+            background-color: #242424;
+            color: #666;
+            cursor: default;
         }
         [data-theme="dark"] .leaflet-control-attribution {
             background: rgba(20, 20, 20, 0.85);
